@@ -1,0 +1,57 @@
+name: Update Deps
+
+on:
+  push:
+
+jobs:
+  Update_Deps:
+
+    runs-on: ubuntu-latest
+    name: ${{ join(matrix.extras, ', ') }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        extras: [[flake8]]
+
+    env:
+      DEPS_UPDATED: false
+      GH_TOKEN: ${{ github.token }}
+      PR_BRANCH: bumpdeps/${{ join(matrix.extras, '_') }}_${{ github.run_id }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install latest Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - name: Install bumpdeps
+        run: pip install bumpdeps
+
+      - name: Setup Git
+        run: |
+          set -x
+          git config --global user.name "BumpDeps"
+          git config --global user.email "<>"
+          git checkout -b $PR_BRANCH
+
+      - name: Update deps
+        run: |
+          set -x
+          bumpdeps ${{ join(matrix.extras, ' ') }}
+          git diff --quiet || echo "DEPS_UPDATED=true" >> $GITHUB_ENV
+
+      - name: Create PR
+        run: |
+          set -x
+           git commit -a -m "BumpDeps: ${{ join(matrix.extras, '_') }}"
+           git --no-pager log -n 2
+           git push -u origin $PR_BRANCH
+           gh pr create -B main -H $PR_BRANCH --title "BumpDeps: ${{ join(matrix.extras, '_') }}" --body "Created by Github Action"
+        if: env.DEPS_UPDATED == 'true'
+
+# Need to push new branch
+# Change to schedule instead of push
+# Add other CI extras, requires updating nox to point to pyproject.toml
