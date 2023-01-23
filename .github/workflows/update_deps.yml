@@ -26,12 +26,13 @@ jobs:
 
     env:
       DEPS_UPDATED: false
-      #GH_TOKEN: ${{ github.token }}
       PR_BRANCH: bumpdeps/${{ join(matrix.args, '_') }}_${{ github.run_id }}
       PR_MSG: "BumpDeps: ${{ matrix.name || matrix.args }}"
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ssh-key: ${{ secrets.PR_DEPLOY_PRIVATE_KEY }}
 
       - name: Install latest Python
         uses: actions/setup-python@v4
@@ -54,32 +55,13 @@ jobs:
           bumpdeps ${{ matrix.args }}
           git diff --quiet || echo "DEPS_UPDATED=true" >> $GITHUB_ENV
 
-      - name: Generate token
-        id: generate_token
-        uses: tibdex/github-app-token@v1
-        with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.PRIVATE_KEY }}
-
-      # - name: Create Pull Request
-      #   uses: peter-evans/create-pull-request@v4
-      #   with:
-      #     token: ${{ steps.generate_token.outputs.token }}
-      #     commit-message: ${{ env.PR_MSG }}
-      #     body: "Created by Github Action"
-      #     title: ${{ env.PR_MSG }}
-      #     branch:  ${{ env.PR_BRANCH }}
-
-
-
       - name: Create PR
         env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -x
           git commit -a -m "$PR_MSG"
           git --no-pager log -n 2
           git push -u origin $PR_BRANCH
           gh pr create -B main -H $PR_BRANCH --title "$PR_MSG" --body "Created by Github Action"
-          gh workflow run continuous-integration-workflow.yml --ref refs/pull/12/head
-          if: env.DEPS_UPDATED == 'true'
+        if: env.DEPS_UPDATED == 'true'
