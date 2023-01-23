@@ -1,6 +1,7 @@
 name: Update Dependencies
 
 on:
+  push:
   schedule:
     # Every Monday at 1 AM
     - cron: '0 1 * * 1'
@@ -14,7 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        args: [docs, flake8, mypy, pylint]
+#        args: [docs, flake8, mypy, pylint]
+         args: [flake8]
 
         # Uncomment to enable base dependency checking
         # include:
@@ -59,4 +61,5 @@ jobs:
           git --no-pager log -n 2
           git push -u origin $PR_BRANCH
           gh pr create -B main -H $PR_BRANCH --title "$PR_MSG" --body "Created by Github Action"
+#          gh workflow run continuous-integration-workflow.yml --ref $PR_BRANCH
         if: env.DEPS_UPDATED == 'true'
