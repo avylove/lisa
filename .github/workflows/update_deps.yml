@@ -41,12 +41,12 @@ jobs:
       - name: Install bumpdeps
         run: pip install bumpdeps
 
-      - name: Setup Git
-        run: |
-          set -x
-          git config --global user.name "BumpDeps"
-          git config --global user.email "<>"
-          git checkout -b $PR_BRANCH
+      # - name: Setup Git
+      #   run: |
+      #     set -x
+      #     git config --global user.name "BumpDeps"
+      #     git config --global user.email "<>"
+      #     git checkout -b $PR_BRANCH
 
       - name: Update deps
         run: |
@@ -54,12 +54,22 @@ jobs:
           bumpdeps ${{ matrix.args }}
           git diff --quiet || echo "DEPS_UPDATED=true" >> $GITHUB_ENV
 
-      - name: Create PR
-        run: |
-          set -x
-          git commit -a -m "$PR_MSG"
-          git --no-pager log -n 2
-          git push -u origin $PR_BRANCH
-          gh pr create -B main -H $PR_BRANCH --title "$PR_MSG" --body "Created by Github Action"
-          gh workflow run continuous-integration-workflow.yml --ref refs/pull/12/head
-        if: env.DEPS_UPDATED == 'true'
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: ${{ env.PR_MSG }}
+          body: "Created by Github Action"
+          title: ${{ env.PR_MSG }}
+          branch:  ${{ env.PR_BRANCH }}
+
+
+
+      # - name: Create PR
+      #   run: |
+      #     set -x
+      #     git commit -a -m "$PR_MSG"
+      #     git --no-pager log -n 2
+      #     git push -u origin $PR_BRANCH
+      #     gh pr create -B main -H $PR_BRANCH --title "$PR_MSG" --body "Created by Github Action"
+      #     gh workflow run continuous-integration-workflow.yml --ref refs/pull/12/head
+      #     if: env.DEPS_UPDATED == 'true'
