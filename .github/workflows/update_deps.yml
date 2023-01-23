@@ -32,6 +32,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ssh-key: ${{ secrets.PR_DEPLOY_PRIVATE_KEY }}
 
       - name: Install latest Python
         uses: actions/setup-python@v4
