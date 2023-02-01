@@ -1,9 +1,10 @@
 name: Update Dependencies
 
 on:
-  schedule:
+  #schedule:
     # Every Monday at 1 AM
-    - cron: '0 1 * * 1'
+    #- cron: '0 1 * * 1'
+  push:
 
 jobs:
   Update_Deps:
@@ -14,18 +15,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        args: [docs, black, flake8, isort, mypy, pylint]
+        args: [docs, flake8]
 
         # Uncomment to enable base dependency checking
         # include:
 
-        # - args: '-b'
-        #   name: Base Dependencies
+        # # - args: '-b'
+        # #   name: Base Dependencies
+
+        # - args: '-a -i .*PyYAML'
+        #   name: PyYAML deps yo
 
     env:
       DEPS_UPDATED: false
-      PR_BRANCH: bumpdeps/${{ join(matrix.args, '_') }}_${{ github.run_id }}
-      PR_MSG: "BumpDeps: ${{ matrix.name || matrix.args }}"
 
     steps:
       - uses: actions/checkout@v3
@@ -40,13 +42,6 @@ jobs:
       - name: Install bumpdeps
         run: pip install bumpdeps
 
-      - name: Setup Git
-        run: |
-          set -x
-          git config --global user.name "BumpDeps"
-          git config --global user.email "<>"
-          git checkout -b $PR_BRANCH
-
       - name: Update deps
         run: |
           set -x
@@ -58,8 +53,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -x
+          PR_BRANCH=bumpdeps/$(echo ${{ matrix.name || matrix.args }} | tr ' ' _)_${{ github.run_id }}
+          PR_MSG="BumpDeps: ${{ matrix.name || matrix.args }}"
+
+          # Configure Git
+          git config --global user.name "BumpDeps"
+          git config --global user.email "<>"
+
+          # Create commit in new branch
+          git checkout -b $PR_BRANCH
           git commit -a -m "$PR_MSG"
           git --no-pager log -n 2
           git push -u origin $PR_BRANCH
+
+          # Create PR
           gh pr create -B main -H $PR_BRANCH --title "$PR_MSG" --body "Created by Github Action"
         if: env.DEPS_UPDATED == 'true'
