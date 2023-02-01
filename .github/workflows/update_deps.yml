@@ -1,9 +1,10 @@
 name: Update Dependencies
 
 on:
-  schedule:
+  #schedule:
     # Every Monday at 1 AM
-    - cron: '0 1 * * 1'
+    #- cron: '0 1 * * 1'
+  push:
 
 jobs:
   Update_Deps:
@@ -17,10 +18,13 @@ jobs:
         args: [docs, black, flake8, isort, mypy, pylint]
 
         # Uncomment to enable base dependency checking
-        # include:
+        include:
 
         # - args: '-b'
         #   name: Base Dependencies
+
+        - args: '-a -i ".*pyYAML"'
+          name: pyYAML
 
     env:
       DEPS_UPDATED: false
